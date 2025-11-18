@@ -11,48 +11,99 @@
 
 *******************************************************************************
 * PREVIOUS SUBCIRCUITS
+/*
 .subckt fa a b c_in sum c_out
-    * Sum
-	Xxor1 a b ab xor2
-    Xxor2 ab c_in sum xor2
-    * Carry
-    Xnand1 ab c_in xn1 nand2
-    Xnand2 a b xn2 nand2
-    Xnand3 xn1 xn2 c_out nand2
-.ends
+    Xxor a b abxor xor2
+    Xsum abxor c_in sum xor2
 
+    Xc1 abxor c_in c1 and2
+    Xc2 a b c2 and2
+    Xc3 c1 c2 c_out or2
+.ends
+*/
+/*
+    32-bit adder implementation
+*/
+/*
 .subckt add32 a[31:0] b[31:0] cin0 sum[31:0] cout[31:30]
     Xfn a[31:0] b[31:0] cout[30:0] cin0 sum[31:0] cout[31:0] fa
 .ends
+*/
+/*
+    Outputs 
+        1 if all values are zero
+        0 if not.
 
-.subckt allzero32 a[31:0] z
-    Xinv a[31:0] ainv[31:0] inverter
-    Xu ainv[0:28:4] ainv[1:29:4] ainv[2:30:4] ainv[3:31:4] u[0:7] nand4
-    Xuinv u[7:0] uinv[7:0] inverter
-    Xfirst uinv[0:3] first_f nand4
-    Xsecond uinv[4:7] second_f nand4
-    Xout first_f second_f z nor2
+    To reduce circuit size, we used a simpler implementation
+    with 2 levels of OR gates followed by a NOR gate
+    instead of using purely NORs/NANDs.
+*/
+/*
+.subckt nor32 a[31:0] z
+    Xor a[31:0] or_int[7:0] or4
+    Xor_second or_int[7:0] or_int2_[1:0] or4
+    Xres or_int2_1 or_int2_0 z nor2
 .ends
+*/
+/*
+    As32 implementation. 32 bits
+    First, Gets the inverted values of B
+    Mux then chooses between either 
+        op0 = 0 -> positive B (addition), or
+        op0 = 1 -> inverted B (subtraction)
+    Addition is made with 
+        A + BAdddend + op0.
+    For subtraction, 2s complement is made since BAddend is inverted
+    and op0 is 1.
+    
+    Inputs
+        a[31:0] - First term/addend
+        b[31:0] - Second term/addend
+        op0     - Op code for addition (0) or subtraction (1)
 
+    Outputs
+        fas[31:0] - The ouptut after addition/subtraction
+        n - Connected and wired directly to fas31, 1 if output is negative,
+            0 otherwise
+        v - Checks for overflow via XOR of last two carry bits, 
+            1 if overflow occurred, 0 otherwise
+        z - 1 if output is zero, 0 otherwise
+*/
+/*
 .subckt as32 a[31:0] b[31:0] op0 fas[31:0] n v z
     Xinv b[31:0] binv[31:0] inverter
     Xbsub op0#32 b[31:0] binv[31:0] baddend[31:0] mux2
     Xsum a[31:0] baddend[31:0] op0 fas[31:0] cout[31:30] add32
     .connect fas31 n
     Xoverflow cout31 cout30 v xor2
-    Xzero fas[31:0] z allzero32
+    Xzero fas[31:0] z nor32
 .ends
+*/
+/*
+    32 bit comparator that checks equality/inequality
+    Relies on an as32 circuit before it.
+    Inputs
+        n, v, z, dependent on as32
+        op1 = 1 -> check for a==bd
+        op2 = 1 -> check for a < b
 
+    Table for Flag checks in relation to Op codes
+    op2 op1 op0 fas[31:0]   check
+    x   x   0   A + B       DON'T CARE
+    0   0   1   A - B       DON'T CARE
+    0   1   1   A - B       1 iff A == B
+    1   0   1   A - B       1 iff A < B
+    1   1   1   A - B       1 iff A <= B
+*/
+/*
 .subckt cmp32 n v z op[2:1] fcmp[31:0]
-    Xeq z op1 eqterm and2
+    Xeq z op1 eqterm nand2
     Xlt_v n v lessterm_overflow xor2
-    Xlt lessterm_overflow op2 lessterm and2
-    Xeqinv eqterm eqterm_inv inverter
-    Xltinv lessterm lessterm_inv inverter
-    Xout1 eqterm_inv lessterm_inv fcmp0 nand2
+    Xlt lessterm_overflow op2 lessterm nand2
+    Xout1 eqterm lessterm fcmp0 nand2
     .connect 0 fcmp[31:1]
 .ends
-
+*/
 /*
     Xid s0 s1 d0 d1 d2 d3 z mux4
 
@@ -81,101 +132,224 @@
     1   1   1   1   1 (TRUE)
 */
 .subckt bool32 a[31:0] b[31:0] op[3:0] fbool[31:0]
-    Xmo a[31:0] b[31:0] op0#32 op1#32 op2#32 op3#32 fbool[31:0] mux4
-.ends 
+    Xmux b[31:0] a[31:0] op3#32 op2#32 op1#32 op0#32 fbool[31:0] mux4
+.ends
 
 /*
-    op for subshifts
-    00 shift left
-    01 shift right
-    10 dc
-    11 arithmetic shift right
+RIGHT SHIFT
+To reduce circuit size, all of the right shifts
+(shiftr1, shiftr2, shiftr4, shiftr8, shiftr16)
+actually have no gates.
 
+Rather, the padding bit (last) is given and connected
+to the n leftmost bits.
+The rest of the bits are the shifted bits--
+aka for the (31-n)th bit to 0th bit, it's
+connected from the left most bit of a (a31) up until
+a(n)
 */
-.subckt 1shift32 in[31:0] out[31:0] op[1:0]
-    Xshift 
-        + op0#32 op1#32 
-        + in[30:0] 0 
-        + 0 in[31:1] 
-        + 0#32 
-        + in31 in[31:1] 
-        + out[31:0] mux4
+.subckt shiftr1 a[31:0] last fshift[31:0]
+    .connect a31 fshift30 
+    .connect a30 fshift29 
+    .connect a29 fshift28 
+    .connect a28 fshift27 
+    .connect a27 fshift26 
+    .connect a26 fshift25 
+    .connect a25 fshift24 
+    .connect a24 fshift23 
+    .connect a23 fshift22 
+    .connect a22 fshift21 
+    .connect a21 fshift20 
+    .connect a20 fshift19 
+    .connect a19 fshift18 
+    .connect a18 fshift17 
+    .connect a17 fshift16 
+    .connect a16 fshift15 
+    .connect a15 fshift14 
+    .connect a14 fshift13 
+    .connect a13 fshift12 
+    .connect a12 fshift11 
+    .connect a11 fshift10 
+    .connect a10 fshift9 
+    .connect a9 fshift8
+    .connect a8 fshift7
+    .connect a7 fshift6
+    .connect a6 fshift5
+    .connect a5 fshift4
+    .connect a4 fshift3
+    .connect a3 fshift2
+    .connect a2 fshift1
+    .connect a1 fshift0
+    .connect last fshift31
 .ends
 
-.subckt 2shift32 in[31:0] out[31:0] op[1:0]
-    Xshift
-        + op0#32 op1#32
-        + in[29:0] 0#2
-        + 0#2 in[31:2]
-        + 0#32
-        + in31#2 in[31:2]
-        + out[31:0] mux4
+.subckt shiftr2 a[31:0] last fshift[31:0]
+    .connect a31 fshift29
+    .connect a30 fshift28
+    .connect a29 fshift27
+    .connect a28 fshift26
+    .connect a27 fshift25
+    .connect a26 fshift24
+    .connect a25 fshift23
+    .connect a24 fshift22
+    .connect a23 fshift21
+    .connect a22 fshift20
+    .connect a21 fshift19
+    .connect a20 fshift18
+    .connect a19 fshift17
+    .connect a18 fshift16
+    .connect a17 fshift15
+    .connect a16 fshift14
+    .connect a15 fshift13
+    .connect a14 fshift12
+    .connect a13 fshift11
+    .connect a12 fshift10
+    .connect a11 fshift9
+    .connect a10 fshift8
+    .connect a9 fshift7
+    .connect a8 fshift6
+    .connect a7 fshift5
+    .connect a6 fshift4
+    .connect a5 fshift3
+    .connect a4 fshift2
+    .connect a3 fshift1
+    .connect a2 fshift0
+    .connect last fshift[31:30]
 .ends
 
-.subckt 4shift32 in[31:0] out[31:0] op[1:0]
-    Xshift
-        + op0#32 op1#32
-        + in[27:0] 0#4
-        + 0#4 in[31:4]
-        + 0#32
-        + in31#4 in[31:4]
-        + out[31:0] mux4
+.subckt shiftr4 a[31:0] last fshift[31:0]
+    .connect a31 fshift27
+    .connect a30 fshift26
+    .connect a29 fshift25
+    .connect a28 fshift24
+    .connect a27 fshift23
+    .connect a26 fshift22
+    .connect a25 fshift21
+    .connect a24 fshift20
+    .connect a23 fshift19
+    .connect a22 fshift18
+    .connect a21 fshift17
+    .connect a20 fshift16
+    .connect a19 fshift15
+    .connect a18 fshift14
+    .connect a17 fshift13
+    .connect a16 fshift12
+    .connect a15 fshift11
+    .connect a14 fshift10
+    .connect a13 fshift9
+    .connect a12 fshift8
+    .connect a11 fshift7
+    .connect a10 fshift6
+    .connect a9 fshift5
+    .connect a8 fshift4
+    .connect a7 fshift3
+    .connect a6 fshift2
+    .connect a5 fshift1
+    .connect a4 fshift0
+    .connect last fshift[31:28]
 .ends
 
-.subckt 8shift32 in[31:0] out[31:0] op[1:0]
-    Xshift
-        + op0#32 op1#32
-        + in[23:0] 0#8
-        + 0#8 in[31:8]
-        + 0#32
-        + in31#8 in[31:8]
-        + out[31:0] mux4
+.subckt shiftr8 a[31:0] last fshift[31:0]
+    .connect a31 fshift23
+    .connect a30 fshift22
+    .connect a29 fshift21
+    .connect a28 fshift20
+    .connect a27 fshift19
+    .connect a26 fshift18
+    .connect a25 fshift17
+    .connect a24 fshift16
+    .connect a23 fshift15
+    .connect a22 fshift14
+    .connect a21 fshift13
+    .connect a20 fshift12
+    .connect a19 fshift11
+    .connect a18 fshift10
+    .connect a17 fshift9
+    .connect a16 fshift8
+    .connect a15 fshift7
+    .connect a14 fshift6
+    .connect a13 fshift5
+    .connect a12 fshift4
+    .connect a11 fshift3
+    .connect a10 fshift2
+    .connect a9 fshift1
+    .connect a8 fshift0
+    .connect last fshift[31:24]
 .ends
 
-.subckt 16shift32 in[31:0] out[31:0] op[1:0]
-    Xshift
-        + op0#32 op1#32
-        + in[15:0] 0#16
-        + 0#16 in[31:16]
-        + 0#32
-        + in31#16 in[31:16]
-        + out[31:0] mux4
+.subckt shiftr16 a[31:0] last fshift[31:0]
+    .connect a31 fshift15
+    .connect a30 fshift14
+    .connect a29 fshift13
+    .connect a28 fshift12
+    .connect a27 fshift11
+    .connect a26 fshift10
+    .connect a25 fshift9
+    .connect a24 fshift8
+    .connect a23 fshift7
+    .connect a22 fshift6
+    .connect a21 fshift5
+    .connect a20 fshift4
+    .connect a19 fshift3
+    .connect a18 fshift2
+    .connect a17 fshift1
+    .connect a16 fshift0
+    .connect last fshift[31:16]
 .ends
 
 .subckt shift32 a[31:0] b[4:0] op[1:0] fshift[31:0]
+    * the padding bit is 0 if op1 is 0 (logical right shift)
+    * but it's a31 in case op1 is 1 (arithmetic right shift)
+    * this is assuming arithmetic left shift is a don't care
+    Xlast op1 a31 last and2
     
-    Xshift16 a[31:0] a16b[31:0] op[1:0] 16shift32
-    Xmux1 b4#32 a[31:0] a16b[31:0] pass1[31:0] mux2
-
-    Xshift8 pass1[31:0] a8b[31:0] op[1:0] 8shift32
-    Xmux2 b3#32 pass1[31:0] a8b[31:0] pass2[31:0] mux2 
-
-    Xshift4 pass2[31:0] a4b[31:0] op[1:0] 4shift32
-    Xmux3 b2#32 pass2[31:0] a4b[31:0] pass3[31:0] mux2
-
-    Xshift2 pass3[31:0] a2b[31:0] op[1:0] 2shift32
-    Xmux4 b1#32 pass3[31:0] a2b[31:0] pass4[31:0] mux2
-
-    Xshift1 pass4[31:0] a1b[31:0] op[1:0] 1shift32
-    Xmux5 b0#32 pass4[31:0] a1b[31:0] fshift[31:0] mux2
+    * We're repurposing the right shift to become a left shift
+    * If we reverse the bits, the leftmost bit becomes the rightmost
+    * Thus right shifting n bits from the reverse of a[31:0] then reversing
+    * it again will be equivalent to a left shift.
+    Xshiftlr op0#32 a[0:31] a[31:0] alr[31:0] mux2
+    
+    * This is just a bunch of mux2's to shift by powers of 2
+    * If b(i) is 0, leave the result as is... otherwise shift it by 2**i bits.
+    Xshift1 alr[31:0] last shift1_res[31:0] shiftr1
+    Xshift1_mux b0#32 alr[31:0] shift1_res[31:0] shift1_mux[31:0] mux2
+    Xshift2 shift1_mux[31:0] last shift2_res[31:0] shiftr2
+    Xshift2_mux b1#32 shift1_mux[31:0] shift2_res[31:0] shift2_mux[31:0] mux2
+    Xshift4 shift2_mux[31:0] last shift4_res[31:0] shiftr4
+    Xshift4_mux b2#32 shift2_mux[31:0] shift4_res[31:0] shift4_mux[31:0] mux2
+    Xshift8 shift4_mux[31:0] last shift8_res[31:0] shiftr8
+    Xshift8_mux b3#32 shift4_mux[31:0] shift8_res[31:0] shift8_mux[31:0] mux2
+    Xshift16 shift8_mux[31:0] last shift16_res[31:0] shiftr16
+    Xshift16_mux b4#32 shift8_mux[31:0] shift16_res[31:0] shift16_mux[31:0] mux2
+    
+    * Again, if we did a left shift, we have to reverse it otherwise it'll be
+    * backwards
+    Xresult op0#32 shift16_mux[0:31] shift16_mux[31:0] fshift[31:0] mux2
 .ends
 
+/*
+ALU Circuit
+
+Table for arithmetic operations
+alufn5 alufn4 OPERATION
+0      0      ADDER/SUBTRACTOR (fas)
+0      1      BOOLEAN FUNCTION (fbool)
+1      0      SHIFTER (fshift)
+1      1      FCMP (fcmp)
+
+alufn[3:0] are used to provide the opcodes for the operation.
+a[31:0] and b[31:0] are the primary and second inputs, respectively.
+*/
 .subckt alu32 a[31:0] b[31:0] alufn[5:0] f[31:0]
-    
-    Xadder a[31:0] b[31:0] alufn0 fsum[31:0] n v z as32
-
-    Xbool a[31:0] b[31:0] alufn[3:0] fbool[31:0] bool32
-
-    Xshift a[31:0] b[4:0] alufn[1:0] fshift[31:0] shift32 
-
+    * Originally, this was going to be two as32's but it bloated the circuit size a lot.
+    * Turns out, if they were going to use the comparator they would subtract anyway.
+    * The old alu32 had an as32 for computation as usual.
+    * And another as32 with the subtraction automatically on.
+    Xas a[31:0] b[31:0] alufn0 fas[31:0] n v z as32
     Xcmp n v z alufn[2:1] fcmp[31:0] cmp32
-
-    Xmux alufn5#32 alufn4#32
-    + fsum[31:0]
-    + fbool[31:0]
-    + fshift[31:0]
-    + fcmp[31:0] 
-    + f[31:0] mux4
+    Xbool a[31:0] b[31:0] alufn[3:0] fbool[31:0] bool32
+    Xshift a[31:0] b[4:0] alufn[1:0] fshift[31:0] shift32
+    Xresult alufn4#32 alufn5#32 fas[31:0] fbool[31:0] fshift[31:0] fcmp[31:0] f[31:0] mux4 
 .ends
 *******************************************************************************
 
@@ -223,10 +397,11 @@
 * TODO: Copy your Beta program's BSim assembler output (.bin file) to your JSim
 *       folder and change the file= parameter accordingly!
 *******************************************************************************
+.connect 0 pc[8:2] ra2_[4:0]
 Xmemory  vdd  0    0   pc[8:2]    inst[31:0]
 +        vdd  0    0   mema[8:2]  memrd[31:0]
 +        0    clk  wr  mema[8:2]  memwd[31:0]
-+ $memory width=32 nlocations=128 file="lab7.bin"
++ $memory width=32 nlocations=128 file="fibolinus.bin"
 
 *******************************************************************************
 * Xregisters is a register memory device to store your Beta registers r0 - r31.
@@ -268,7 +443,7 @@ Xwerf3 wa40 werf 0 werf_ mux2
 *                      times 2 (first half is for z = 0, second half for z = 1)
 * TODO: Fill these lines with the proper control signals for each opcode!
 *******************************************************************************
-Xcontrol  vdd  0  0  z opcode[5:0]  control[13:0]
+Xcontrol  vdd  0  0  zero opcode[5:0]  control[13:0]
 + $memory width=14 nlocations=128 contents=(
 +   0b11000000000000 0b11000000000000 0b11000000000000 0b11000000000000 0b11000000000000 0b11000000000000 0b11000000000000 0b11000000000000
 +   0b11000000000000 0b11000000000000 0b11000000000000 0b11000000000000 0b11000000000000 0b11000000000000 0b11000000000000 0b11000000000000
@@ -324,27 +499,23 @@ Xjinste inst[15:0]  c[15:0]     join
 * Note that you will need to replace this with a real program counter circuit
 * in the final lab!
 *******************************************************************************
-
 * +4
-.subckt in[8:2] out[8:2] plus_4
-    Xfn in[8:2]         * input 
-       + 0#6 1          * +4
-       + cout[7:0]      * carry to next bit
-       + 0              * carry input = 0 (add)
-       + out[8:2]       * output
-       + cout[8:2] fa   * output the carry
+.subckt plusfour in[8:2] out[8:2]
+    .connect b[8:5] b[3:2] 0
+    .connect b 1
+    Xfa in[8:2] b[8:2] cout[5:0] 0 out[8:2] cout[6:0] fa
 .ends
 
-Xpcplus4 pc[8:2] pc_plus_4[8:2] plus4
+Xpcplus_four pc[8:2] pc_plus[8:2] plusfour
 
 
 * PCSEL
 * TODO JT and PC + 4 + 4C
-Xpcsel pcsel[1:0] pc_plus_4[8:2] ~ ~ pc[8:2] mux4
+Xpcsel pcsel[1:0]#7 pc_plus[8:2] jt[8:2] brt[8:2] pc[8:2] mux4
 
 
 * WDSEL
-Xwdsel wdsel[1:0] pc_plus_4 f[31:0] rd[31:0] f[31:0] 0#31 wd[31:0] mux4
+Xwdsel wdsel[1:0]#32 pc_plus[8] f[31:0] rd[31:0] 0#32 wd[31:0] mux4
 
 
 *******************************************************************************
@@ -359,8 +530,8 @@ Xwdsel wdsel[1:0] pc_plus_4 f[31:0] rd[31:0] f[31:0] 0#31 wd[31:0] mux4
 * Plot some signals together (or else we won't have enough space in the plot
 * window)
 *******************************************************************************
-Xjdisplaya ra2_b_wdsel[3:0] ra2sel bsel wdsel[1:0] join
-Xjdisplayb wr_werfs[2:0]    wr werf werf_          join
+*Xjdisplaya ra2_b_wdsel[3:0] ra2sel bsel wdsel[1:0] join
+*Xjdisplayb wr_werfs[2:0]    wr werf werf_          join
 
 *******************************************************************************
 * This section plots the following signals in order:
@@ -389,7 +560,8 @@ Xjdisplayb wr_werfs[2:0]    wr werf werf_          join
 *            connected to ground or vdd!)
 *******************************************************************************
 .tran 1280ns
-.plot pc[8:0]
+.plot pc[8:2]
+/*
 .plot betaop(opcode[5:0])
 .plot d(ra[4:0])
 .plot d(rb[4:0])
@@ -405,3 +577,4 @@ Xjdisplayb wr_werfs[2:0]    wr werf werf_          join
 .plot d(mema[8:0])
 .plot sd(memrd[31:0])
 .plot sd(memwd[31:0])
+*/
