@@ -1,0 +1,42 @@
+| r0 - input / n
+| r1 - offset
+| r2 - f[n-1]
+| r3 - f[n-2]
+| r4 - f[n]
+| r5 - CMP results
+| Edge Cases, n = 1, n = 2
+| Constraints, n > 0
+
+.include beta.uasm
+
+        LD(r31, INPUT, r0)      | load input to r0
+        ST(r31, r3)             | r3 = 0
+        ADDC(r2, 1, r2)         | r2 = 1
+        ST(r31, r1)             | r1 = 0   
+        ST(r3, OUTPUT, r1)      | output[r1] = r3 [0]
+        SUBC(r0, 1, r0)         | r0 += -1
+        CMPLEC(r0, 0, r5)       | if r0 <= 0:
+        BNE(r5, END)             |   return output
+        ADDC(r1, 4, r1)         | r1 += 1
+        SUBC(r0, 1, r0)         | r0 += -1
+        ST(r2, OUTPUT, r1)      | output[r1] = r2 [0, 1]
+        CMPLEC(r0, 0, r5)       | if r0 <= 0:
+        BNE(r5, END)             |   return output    
+        
+| n >= 3
+LOOP:
+        ADD(r2, r3, r4)         | f(n-1) + f(n-2) = f(n)
+        ADD(r2, r31 ,r3)            | f(n-1) -> f(n-2)
+        ADD(r4, r31 ,R2)            | f(n) -> f(n-1)
+        ADDC(r1, 4, r1)         | r1 += 1
+        ST(r4, OUTPUT, r1)      | output[r1] = r1 [0,1,...]
+        SUBC(r0, 1, r0)         | r0 += -1
+        CMPLEC(r0, 0, r5)       | if r0 > 0:
+        BEQ(r5, LOOP)           |   loop
+
+END: 
+    HALT()
+. = 0x19c
+INPUT: 
+        LONG(7)
+OUTPUT:

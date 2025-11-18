@@ -1,0 +1,194 @@
+.include "8clocks.jsim"
+.include "nominal.jsim"
+.include "stdcell.jsim"
+
+.subckt fa a b c_in sum c_out
+    * Sum
+	Xxor1 a b ab xor2
+    Xxor2 ab c_in sum xor2
+    * Carry
+    Xnand1 ab c_in xn1 nand2
+    Xnand2 a b xn2 nand2
+    Xnand3 xn1 xn2 c_out nand2
+.ends
+
+.subckt add32 a[31:0] b[31:0] cin0 sum[31:0] cout[31:30]
+    Xfn a[31:0] b[31:0] cout[30:0] cin0 sum[31:0] cout[31:0] fa
+.ends
+
+.subckt allzero32 a[31:0] z
+    Xinv a[31:0] ainv[31:0] inverter
+    Xu ainv[0:28:4] ainv[1:29:4] ainv[2:30:4] ainv[3:31:4] u[0:7] nand4
+    Xuinv u[7:0] uinv[7:0] inverter
+    Xfirst uinv[0:3] first_f nand4
+    Xsecond uinv[4:7] second_f nand4
+    Xout first_f second_f z nor2
+.ends
+
+.subckt as32 a[31:0] b[31:0] op0 fas[31:0] n v z
+    Xinv b[31:0] binv[31:0] inverter
+    Xbsub op0#32 b[31:0] binv[31:0] baddend[31:0] mux2
+    Xsum a[31:0] baddend[31:0] op0 fas[31:0] cout[31:30] add32
+    .connect fas31 n
+    Xoverflow cout31 cout30 v xor2
+    Xzero fas[31:0] z allzero32
+.ends
+
+.subckt cmp32 n v z op[2:1] fcmp[31:0]
+    Xeq z op1 eqterm and2
+    Xlt_v n v lessterm_overflow xor2
+    Xlt lessterm_overflow op2 lessterm and2
+    Xeqinv eqterm eqterm_inv inverter
+    Xltinv lessterm lessterm_inv inverter
+    Xout1 eqterm_inv lessterm_inv fcmp0 nand2
+    .connect 0 fcmp[31:1]
+.ends
+
+/*
+    Xid s0 s1 d0 d1 d2 d3 z mux4
+
+    Z=D0 when S0=0, S1=0
+    Z=D1 when S0=1, S1=0
+    Z=D2 when S0=0, S1=1
+    Z=D3 when S0=1, S1=1
+    
+    Truth Table for this bool32
+    op3 op2 op1 op0 result
+    0   0   0   0   0 (FALSE)
+    0   0   0   1   a'b'
+    0   0   1   0   ab'
+    0   0   1   1   b'
+    0   1   0   0   a'b
+    0   1   0   1   a'
+    0   1   1   0   a'b + ab' (XOR)
+    0   1   1   1   (ab)' (NAND)
+    1   0   0   0   ab (AND)
+    1   0   0   1   ab + a'b' (XNOR)
+    1   0   1   0   a
+    1   0   1   1   a + b'
+    1   1   0   0   b
+    1   1   0   1   a' + b
+    1   1   1   0   a + b (OR)
+    1   1   1   1   1 (TRUE)
+*/
+.subckt bool32 a[31:0] b[31:0] op[3:0] fbool[31:0]
+    Xmo a[31:0] b[31:0] op0#32 op1#32 op2#32 op3#32 fbool[31:0] mux4
+.ends 
+
+/*
+    op for subshifts
+    00 shift left
+    01 shift right
+    10 dc
+    11 arithmetic shift right
+
+*/
+.subckt 1shift32 in[31:0] out[31:0] op[1:0]
+    Xshift 
+        + op0#32 op1#32 
+        + in[30:0] 0 
+        + 0 in[31:1] 
+        + 0#32 
+        + in31 in[31:1] 
+        + out[31:0] mux4
+.ends
+
+.subckt 2shift32 in[31:0] out[31:0] op[1:0]
+    Xshift
+        + op0#32 op1#32
+        + in[29:0] 0#2
+        + 0#2 in[31:2]
+        + 0#32
+        + in31#2 in[31:2]
+        + out[31:0] mux4
+.ends
+
+.subckt 4shift32 in[31:0] out[31:0] op[1:0]
+    Xshift
+        + op0#32 op1#32
+        + in[27:0] 0#4
+        + 0#4 in[31:4]
+        + 0#32
+        + in31#4 in[31:4]
+        + out[31:0] mux4
+.ends
+
+.subckt 8shift32 in[31:0] out[31:0] op[1:0]
+    Xshift
+        + op0#32 op1#32
+        + in[23:0] 0#8
+        + 0#8 in[31:8]
+        + 0#32
+        + in31#8 in[31:8]
+        + out[31:0] mux4
+.ends
+
+.subckt 16shift32 in[31:0] out[31:0] op[1:0]
+    Xshift
+        + op0#32 op1#32
+        + in[15:0] 0#16
+        + 0#16 in[31:16]
+        + 0#32
+        + in31#16 in[31:16]
+        + out[31:0] mux4
+.ends
+
+.subckt shift32 a[31:0] b[4:0] op[1:0] fshift[31:0]
+    
+    Xshift16 a[31:0] a16b[31:0] op[1:0] 16shift32
+    Xmux1 b4#32 a[31:0] a16b[31:0] pass1[31:0] mux2
+
+    Xshift8 pass1[31:0] a8b[31:0] op[1:0] 8shift32
+    Xmux2 b3#32 pass1[31:0] a8b[31:0] pass2[31:0] mux2 
+
+    Xshift4 pass2[31:0] a4b[31:0] op[1:0] 4shift32
+    Xmux3 b2#32 pass2[31:0] a4b[31:0] pass3[31:0] mux2
+
+    Xshift2 pass3[31:0] a2b[31:0] op[1:0] 2shift32
+    Xmux4 b1#32 pass3[31:0] a2b[31:0] pass4[31:0] mux2
+
+    Xshift1 pass4[31:0] a1b[31:0] op[1:0] 1shift32
+    Xmux5 b0#32 pass4[31:0] a1b[31:0] fshift[31:0] mux2
+.ends
+
+.subckt alu32 a[31:0] b[31:0] alufn[5:0] f[31:0]
+    
+    Xadder a[31:0] b[31:0] alufn0 fsum[31:0] n v z as32
+
+    Xbool a[31:0] b[31:0] alufn[3:0] fbool[31:0] bool32
+
+    Xshift a[31:0] b[4:0] alufn[1:0] fshift[31:0] shift32 
+
+    Xcmp n v z alufn[2:1] fcmp[31:0] cmp32
+
+    Xmux alufn5#32 alufn4#32
+    + fsum[31:0]
+    + fbool[31:0]
+    + fshift[31:0]
+    + fcmp[31:0] 
+    + f[31:0] mux4
+.ends
+
+Xalu32test a[31:0] b[31:0] alufn[5:0] f[31:0] alu32
+
+
+Wa a[31:0] nrz(0v,5.0v,20ns,0ns,.1ns,.1ns)
+ + -1 0x55555555 0xAAAAAAAA 1 -2 -1 -1 0x55555555 0 -1 0x55555555 0
+ + -1 0x55555555 0 -1 0x55555555 0 -1 0x55555555 0 1 -1 -1 0x55555555 0xAAAAAAAA -1
+ + 0x55555555 0xAAAAAAAA -1 -1 15 0 -1 15 0 -1 15 0
+
+Wb b[31:0] nrz(0v,5.0v,20ns,0ns,.1ns,.1ns)
+ + 1 0x55555555 0xAAAAAAAA 1 0 -1 -1 0xAAAAAAAA 0 -1 0xAAAAAAAA 0
+ + -1 0xAAAAAAAA 0 -1 0xAAAAAAAA 0 -1 0xAAAAAAAA 0 31 15 0 24 24 31
+ + 24 24 31 1 15 -256 1 15 -256 1 15 -256
+
+Wf alufn[5:0] nrz(0v,5.0v,60ns,0ns,.1ns,.1ns)
+ + 0 1 24 30 22 26 21 32 33 35 51 53 55 
+
+
+.tran 1600ns
+.plot a[31:0]
+.plot b[31:0]
+.plot alufn[5:0]
+.plot f[31:0]
+* .plot out[31:0]
