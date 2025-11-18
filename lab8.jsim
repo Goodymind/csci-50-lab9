@@ -350,6 +350,17 @@ Xwdsel wdsel[1:0] pc_plus_4 f[31:0] memrd[31:0] f[31:0] 0#31 wd[31:0] mux4
 * RA2SEL
 Xra2sel ra2sel rb[4:0] rc[4:0] ra2_[4:0] mux2
 
+* BSEL
+.subckt sign_extend in[15:0] out[31:0]
+  Xse1 in15 out31 join
+  Xse2 in[14:0] out[14:0] join
+  Xse3 0#16 out[30:15] join
+.ends
+
+Xcex c[15:0] cext[31:0] sign_extend
+
+Xbsel bsel rd2_[31:0] rd1_[31:0] cext[31:0] memwd[31:0] mux2
+
 *******************************************************************************
 * Temporarily connect other undefined signals.
 * Note that you will need to remove these signals from this section once you
