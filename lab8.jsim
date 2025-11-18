@@ -11,7 +11,6 @@
 
 *******************************************************************************
 * PREVIOUS SUBCIRCUITS
-/*
 .subckt fa a b c_in sum c_out
     Xxor a b abxor xor2
     Xsum abxor c_in sum xor2
@@ -20,15 +19,12 @@
     Xc2 a b c2 and2
     Xc3 c1 c2 c_out or2
 .ends
-*/
 /*
     32-bit adder implementation
 */
-/*
 .subckt add32 a[31:0] b[31:0] cin0 sum[31:0] cout[31:30]
     Xfn a[31:0] b[31:0] cout[30:0] cin0 sum[31:0] cout[31:0] fa
 .ends
-*/
 /*
     Outputs 
         1 if all values are zero
@@ -38,13 +34,11 @@
     with 2 levels of OR gates followed by a NOR gate
     instead of using purely NORs/NANDs.
 */
-/*
 .subckt nor32 a[31:0] z
     Xor a[31:0] or_int[7:0] or4
     Xor_second or_int[7:0] or_int2_[1:0] or4
     Xres or_int2_1 or_int2_0 z nor2
 .ends
-*/
 /*
     As32 implementation. 32 bits
     First, Gets the inverted values of B
@@ -69,7 +63,6 @@
             1 if overflow occurred, 0 otherwise
         z - 1 if output is zero, 0 otherwise
 */
-/*
 .subckt as32 a[31:0] b[31:0] op0 fas[31:0] n v z
     Xinv b[31:0] binv[31:0] inverter
     Xbsub op0#32 b[31:0] binv[31:0] baddend[31:0] mux2
@@ -78,7 +71,6 @@
     Xoverflow cout31 cout30 v xor2
     Xzero fas[31:0] z nor32
 .ends
-*/
 /*
     32 bit comparator that checks equality/inequality
     Relies on an as32 circuit before it.
@@ -95,7 +87,6 @@
     1   0   1   A - B       1 iff A < B
     1   1   1   A - B       1 iff A <= B
 */
-/*
 .subckt cmp32 n v z op[2:1] fcmp[31:0]
     Xeq z op1 eqterm nand2
     Xlt_v n v lessterm_overflow xor2
@@ -103,7 +94,6 @@
     Xout1 eqterm lessterm fcmp0 nand2
     .connect 0 fcmp[31:1]
 .ends
-*/
 /*
     Xid s0 s1 d0 d1 d2 d3 z mux4
 
