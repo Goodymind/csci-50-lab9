@@ -357,6 +357,7 @@ Xra2sel ra2sel rb[4:0] rc[4:0] ra2_[4:0] mux2
 *******************************************************************************
 * .connect vdd clk ra1_[4:0] ra2_[4:0] wa[4:0] wd[31:0] mema[8:0] memwd[31:0]
 * .connect 0 z
+Xjoina rd1_[31:0] a[31:0] join
 
 *******************************************************************************
 * Plot some signals together (or else we won't have enough space in the plot
@@ -391,6 +392,10 @@ Xjdisplayb wr_werfs[2:0]    wr werf werf_          join
 *            lab, z should instead be computed by some circuit instead of
 *            connected to ground or vdd!)
 *******************************************************************************
+
+* ALU32
+Xalu a[31:0] b[31:0] alufn[5:0] f[31:0] alu32
+
 .tran 1280ns
 .plot pc[8:0]
 .plot betaop(opcode[5:0])
