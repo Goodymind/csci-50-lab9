@@ -526,13 +526,16 @@ Xbsel_mux bsel#32 rd2_[31:0] inst15#16 inst[15:0] alu_b[31:0] mux2
 Xalu rd1_[31:0] alu_b[31:0] alufn[5:0] f[31:0] alu32
 
 * WDSEL
-Xwdsel wdsel[1:0]#32 pc_plus8#25 pc_plus[8:2] f[31:0] memrd[31:0] 0#32 wd[31:0] mux4
+Xwdsel wdsel[1:0]#32 pc_plus8#25 pc_plus[8:2] f[31:0] memwd[31:0] 0#32 wd[31:0] mux4
 
 * Connect clock to clk8
 .connect clk clk8
 
 * Connect ra2_ to rb or rc
 Xra2sel_mux ra2sel#5 inst[15:11] inst[25:21] ra2_[4:0] mux2
+
+* Connect alu output to mema
+Xalu_mema f[6:0] mema[8:2] join
 
 *******************************************************************************
 * Temporarily connect other undefined signals.
