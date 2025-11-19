@@ -522,7 +522,7 @@ Xpc pcinp[8:2] clk8#7 pc[8:2] dreg
 
 
 * WDSEL
-Xwdsel wdsel[1:0]#32 pc_plus8#25 pc_plus[8:2] f[31:0] rd[31:0] 0#32 wd[31:0] mux4
+Xwdsel wdsel[1:0]#32 pc_plus8#25 pc_plus[8:2] f[31:0] memrd[31:0] 0#32 wd[31:0] mux4
 
 
 *******************************************************************************
