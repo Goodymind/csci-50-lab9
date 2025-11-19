@@ -387,7 +387,6 @@ a[31:0] and b[31:0] are the primary and second inputs, respectively.
 * TODO: Copy your Beta program's BSim assembler output (.bin file) to your JSim
 *       folder and change the file= parameter accordingly!
 *******************************************************************************
-.connect 0 pc[8:2] ra2_[4:0]
 Xmemory  vdd  0    0   pc[8:2]    inst[31:0]
 +        vdd  0    0   mema[8:2]  memrd[31:0]
 +        0    clk  wr  mema[8:2]  memwd[31:0]
@@ -489,19 +488,36 @@ Xjinste inst[15:0]  c[15:0]     join
 * Note that you will need to replace this with a real program counter circuit
 * in the final lab!
 *******************************************************************************
-* +4
+
+*(+4)
 .subckt plusfour in[8:2] out[8:2]
-    .connect b[8:5] b[3:2] 0
-    .connect b 1
-    Xfa in[8:2] b[8:2] cout[5:0] 0 out[8:2] cout[6:0] fa
+    Xfa in[8:2] 0#7 cout[5:0] 1 out[8:2] cout[6:0] fa
 .ends
 
+.subckt plusfour_c in[8:2] c[15:0] out[8:2]
+    * sign extend c
+    .connect c15 c_ext[31:16]
+    Xcopyc c[15:0] c_ext[15:0] join
+    * sign extend in
+    .connect in8 in_ext[33:9]
+    * shift right in by 2 -- in / 4
+    Xin_div in_ext[31:0] 0 0 0 vdd 0 vdd vdd in_div[31:0] shift32
+    * in/4 + c + 1 (add32 but should be less than that tbh)
+    Xsum in_div[31:0] c_ext[31:0] 1 sum[31:0] cout[31:30] add32
+    * times everything by 4
+    Xmult_sum sum[31:0] 0 0 0 vdd 0 0 0 out[33:2] shift32
+.ends
+
+
+
 Xpcplus_four pc[8:2] pc_plus[8:2] plusfour
+Xpcplus_four_c pc[8:2] inst[15:0] pc_plus_c[8:2] plusfour_c
 
+Xra_addr inst[20:16] ra1_[4:0] join
+Xpcmux pcsel[0:1]#7 pc_plus[8:2] pc_plus_c[8:2] rd1_[6:0] pc[8:2] pcinp[8:2] mux4
 
-* PCSEL
-* TODO JT and PC + 4 + 4C
-Xpcsel pcsel[1:0]#7 pc_plus[8:2] jt[8:2] brt[8:2] pc[8:2] mux4
+*Program Counter
+Xpc pcinp[8:2] clk8#7 pc[8:2] dreg
 
 
 * WDSEL
