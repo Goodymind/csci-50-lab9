@@ -540,6 +540,9 @@ Xalu_mema f[6:0] mema[8:2] join
 * Connect memwd to rd2
 Xrd2_memwd rd2_[31:0] memwd[31:0] join
 
+* Finally... connect zero signal
+Xzero rd1_[31:0] zero nor32
+
 *******************************************************************************
 * Temporarily connect other undefined signals.
 * Note that you will need to remove these signals from this section once you
