@@ -500,8 +500,9 @@ Xjinste inst[15:0]  c[15:0]     join
     Xcopyc c[15:0] c_ext[15:0] join
     * sign extend in
     .connect in8 in_ext[33:9]
+    Xcopyin in[8:2] in_ext[8:2] join
     * shift right in by 2 -- in / 4
-    Xin_div in_ext[31:0] 0 0 0 vdd 0 vdd vdd in_div[31:0] shift32
+    Xin_div in_ext[33:2] 0 0 0 vdd 0 vdd vdd in_div[31:0] shift32
     * in/4 + c + 1 (add32 but should be less than that tbh)
     Xsum in_div[31:0] c_ext[31:0] 1 sum[31:0] cout[31:30] add32
     * times everything by 4
@@ -521,7 +522,7 @@ Xpc pcinp[8:2] clk8#7 pc[8:2] dreg
 
 
 * WDSEL
-Xwdsel wdsel[1:0]#32 pc_plus[8] f[31:0] rd[31:0] 0#32 wd[31:0] mux4
+Xwdsel wdsel[1:0]#32 pc_plus8#25 pc_plus[8:2] f[31:0] rd[31:0] 0#32 wd[31:0] mux4
 
 
 *******************************************************************************
