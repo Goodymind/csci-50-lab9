@@ -360,8 +360,10 @@ Xjinste inst[15:0]  c[15:0]     join
 Xjpc clk[8:2] pc[8:2] join
 .connect 0 pc[1:0]
 
-* pc + 4
-.subckt plusfour pc[8:2]
+*(+4+4c)
+.subckt plusfour_c pc_inp[8:0] c[6:0] pc_next[8:0]
+  Xadd pc_inp[8:2] c[6:0] cout[5:0] vdd pc_next[8:2] cout[6:0] fa
+  Xjoin pc_inp[1:0] pc_next[1:0] join
 .ends
 
 *******************************************************************************
@@ -407,8 +409,11 @@ Xjdisplayb wr_werfs[2:0]    wr werf werf_          join
 *            lab, z should instead be computed by some circuit instead of
 *            connected to ground or vdd!)
 *******************************************************************************
+
+Xplusfour pc[8:0] 0#5 vdd 0 pc_next[8:0] plusfour_c
 .tran 1280ns
 .plot pc[8:0]
+.plot pc_next[8:0]
 .plot inst[31:0]
 * .plot betaop(opcode[5:0])
 * .plot d(ra[4:0])
