@@ -357,14 +357,21 @@ Xjinste inst[15:0]  c[15:0]     join
 * Note that you will need to replace this with a real program counter circuit
 * in the final lab!
 *******************************************************************************
-Xjpc clk[8:2] pc[8:2] join
-.connect 0 pc[1:0]
+* Xjpc clk[8:2] pc[8:2] join
+* .connect 0 pc[1:0]
 
 *(+4+4c)
 .subckt plusfour_c pc_inp[8:0] c[6:0] pc_next[8:0]
   Xadd pc_inp[8:2] c[6:0] cout[5:0] vdd pc_next[8:2] cout[6:0] fa
   Xjoin pc_inp[1:0] pc_next[1:0] join
 .ends
+
+Xnextline pc[8:0] 0#7 pc_nextline[8:0] plusfour_c
+Xoffsetline pc[8:0] c[6:0] pc_offset[8:0] plusfour_c
+
+Xpcmux pcsel[0:1]#9 pc_nextline[8:0] pc_offset[8:0] rd1_[8:0] pc[8:0] pc_mux[8:0] mux4
+XresetReg resetA#9 pc_mux[8:0] pc_reg[8:0] and2
+Xpcounter pc_reg[8:0] clk6#9 pc[8:0] dreg
 
 *******************************************************************************
 * Temporarily connect other undefined signals.
@@ -410,23 +417,23 @@ Xjdisplayb wr_werfs[2:0]    wr werf werf_          join
 *            connected to ground or vdd!)
 *******************************************************************************
 
-Xplusfour pc[8:0] 0#5 vdd 0 pc_next[8:0] plusfour_c
-.tran 1280ns
+WresetA resetA nrz(0v,5.0v,20ns,0ns,.1ns,.1ns)
++ 0 1
+.tran 5280ns
 .plot pc[8:0]
-.plot pc_next[8:0]
 .plot inst[31:0]
-* .plot betaop(opcode[5:0])
-* .plot d(ra[4:0])
-* .plot d(rb[4:0])
-* .plot d(rc[4:0])
-* .plot sd(c[15:0])
-* .plot b(pcsel[1:0])
-* .plot b(ra2_b_wdsel[3:0])
-* .plot b(alufn[5:0])
-* .plot b(wr_werfs[2:0])
-* .plot sd(rd1_[31:0])
-* .plot sd(rd2_[31:0])
-* .plot sd(wd[31:0])
-* .plot d(mema[8:0])
-* .plot sd(memrd[31:0])
-* .plot sd(memwd[31:0])
+.plot betaop(opcode[5:0])
+.plot d(ra[4:0])
+.plot d(rb[4:0])
+.plot d(rc[4:0])
+.plot sd(c[15:0])
+.plot b(pcsel[1:0])
+.plot b(ra2_b_wdsel[3:0])
+.plot b(alufn[5:0])
+.plot b(wr_werfs[2:0])
+.plot sd(rd1_[31:0])
+.plot sd(rd2_[31:0])
+.plot sd(wd[31:0])
+.plot d(mema[8:0])
+.plot sd(memrd[31:0])
+.plot sd(memwd[31:0])
