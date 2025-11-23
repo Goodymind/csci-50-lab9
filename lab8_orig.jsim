@@ -138,22 +138,22 @@
 .ends
 
 .subckt shiftr2 a[31:0] last fshift[31:0]
-  Xjoin a[31:2] fshift[29:0]
+  Xjoin a[31:2] fshift[29:0] join
   .connect last fshift[31:30]
 .ends
 
 .subckt shiftr4 a[31:0] last fshift[31:0]
-  Xjoin a[31:4] fshift[27:0]
+  Xjoin a[31:4] fshift[27:0] join
   .connect last fshift[31:28]
 .ends
 
 .subckt shiftr8 a[31:0] last fshift[31:0]
-  Xjoin a[31:8] fshift[23:0]
+  Xjoin a[31:8] fshift[23:0] join
   .connect last fshift[31:24]
 .ends
 
 .subckt shiftr16 a[31:0] last fshift[31:0]
-  Xjoin a[31:16] fshift[15:0]
+  Xjoin a[31:16] fshift[15:0] join
   .connect last fshift[31:16]
 .ends
 
@@ -258,7 +258,7 @@ a[31:0] and b[31:0] are the primary and second inputs, respectively.
 *******************************************************************************
 Xmemory  vdd  0    0   pc[8:2]    inst[31:0]
 +        vdd  0    0   mema[8:2]  memrd[31:0]
-+        0    clk  wr  mema[8:2]  memwd[31:0]
++        0    clk  wr_  mema[8:2]  memwd[31:0]
 + $memory width=32 nlocations=128 file="fibolinus.bin"
 
 *******************************************************************************
@@ -271,7 +271,7 @@ Xmemory  vdd  0    0   pc[8:2]    inst[31:0]
 *******************************************************************************
 Xregisters  vdd  0    0      ra1_[4:0]  rd1_[31:0]
 +           vdd  0    0      ra2_[4:0]  rd2_[31:0]
-+           0    clk  werf_  wa[4:0]    wd[31:0]
++           0    clk  werf_reset wa[4:0]    wd[31:0]
 + $memory width=32 nlocations=32 contents=(
 +   0 0 0 0 0 0 0 0
 +   0 0 0 0 0 0 0 0
@@ -347,7 +347,7 @@ Xjcontrolg control0       werf       join
 *******************************************************************************
 Xjinsta inst[31:26] opcode[5:0] join
 Xjinstb inst[25:21] rc[4:0]     join
-Xjinstc inst[20:16] ra[4:0]     join
+Xjinstc inst[20:16] ra1_[4:0]     join
 Xjinstd inst[15:11] rb[4:0]     join
 Xjinste inst[15:0]  c[15:0]     join
 
@@ -378,11 +378,25 @@ Xpcounter pc_reg[8:0] clk6#9 pc[8:0] dreg
 * Note that you will need to remove these signals from this section once you
 * connect them elsewhere!
 *******************************************************************************
-.connect vdd ra1_[4:0] ra2_[4:0] wa[4:0] wd[31:0] mema[8:0] memwd[31:0]
+.connect vdd  wa[4:0] mema[8:0]
 .connect 0 z
 
 * connect clock to clk8
 .connect clk8 clk
+
+Xrd2_wd rd2_[31:0] memwd[31:0] join
+
+* RA2SEL
+Xra2sel ra2sel#5 rb[4:0] rc[4:0] ra2_[4:0] mux2
+
+* WDSEL
+Xwdsel wdsel[0:1]#32 pc_nextline8#23 pc_nextline[8:0] f[31:0] memrd[31:0] 0#32 wd[31:0] mux4
+
+* BSEL
+Xbsel bsel#32 c15#16 c[15:0] rd2_[31:0] b_mux[31:0] mux2
+
+* ALU
+Xalu rd1_[31:0] b_mux[31:0] alufn[5:0] f[31:0] alu32
 *******************************************************************************
 * Plot some signals together (or else we won't have enough space in the plot
 * window)
@@ -416,6 +430,8 @@ Xjdisplayb wr_werfs[2:0]    wr werf werf_          join
 *            lab, z should instead be computed by some circuit instead of
 *            connected to ground or vdd!)
 *******************************************************************************
+Xresetwr resetA wr wr_ and2
+Xresetwerf resetA werf_ werf_reset and2
 
 WresetA resetA nrz(0v,5.0v,20ns,0ns,.1ns,.1ns)
 + 0 1
@@ -423,7 +439,7 @@ WresetA resetA nrz(0v,5.0v,20ns,0ns,.1ns,.1ns)
 .plot pc[8:0]
 .plot inst[31:0]
 .plot betaop(opcode[5:0])
-.plot d(ra[4:0])
+.plot d(ra1_[4:0])
 .plot d(rb[4:0])
 .plot d(rc[4:0])
 .plot sd(c[15:0])
