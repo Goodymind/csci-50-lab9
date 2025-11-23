@@ -346,7 +346,7 @@ Xjcontrolg control0       werf       join
 * Also connect our instruction signal lines to our opcode, rc, ra, rb, and c.
 *******************************************************************************
 Xjinsta inst[31:26] opcode[5:0] join
-Xjinstb inst[25:21] rc[4:0]     join
+Xjinstb inst[25:21] wa[4:0]     join
 Xjinstc inst[20:16] ra1_[4:0]     join
 Xjinstd inst[15:11] rb[4:0]     join
 Xjinste inst[15:0]  c[15:0]     join
@@ -378,7 +378,6 @@ Xpcounter pc_reg[8:0] clk6#9 pc[8:0] dreg
 * Note that you will need to remove these signals from this section once you
 * connect them elsewhere!
 *******************************************************************************
-.connect vdd  wa[4:0] mema[8:0]
 .connect 0 z
 
 * connect clock to clk8
@@ -387,7 +386,7 @@ Xpcounter pc_reg[8:0] clk6#9 pc[8:0] dreg
 Xrd2_wd rd2_[31:0] memwd[31:0] join
 
 * RA2SEL
-Xra2sel ra2sel#5 rb[4:0] rc[4:0] ra2_[4:0] mux2
+Xra2sel ra2sel#5 rb[4:0] wa[4:0] ra2_[4:0] mux2
 
 * WDSEL
 Xwdsel wdsel[0:1]#32 pc_nextline8#23 pc_nextline[8:0] f[31:0] memrd[31:0] 0#32 wd[31:0] mux4
@@ -397,6 +396,7 @@ Xbsel bsel#32 c15#16 c[15:0] rd2_[31:0] b_mux[31:0] mux2
 
 * ALU
 Xalu rd1_[31:0] b_mux[31:0] alufn[5:0] f[31:0] alu32
+Xmema f[6:0] mema[8:2] join
 *******************************************************************************
 * Plot some signals together (or else we won't have enough space in the plot
 * window)
