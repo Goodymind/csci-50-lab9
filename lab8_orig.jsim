@@ -396,7 +396,7 @@ Xbsel bsel#32 c15#16 c[15:0] rd2_[31:0] b_mux[31:0] mux2
 
 * ALU
 Xalu rd1_[31:0] b_mux[31:0] alufn[5:0] f[31:0] alu32
-Xmema f[6:0] mema[8:2] join
+Xmema f[8:0] mema[8:0] join
 *******************************************************************************
 * Plot some signals together (or else we won't have enough space in the plot
 * window)
