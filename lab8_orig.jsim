@@ -1,16 +1,18 @@
 *******************************************************************************
-* LAB #8
-* - Abuke, Alinus
-* - Huang, Julyanna Francesca
-* - Li, Raphael Seth
+* As with the previous labs, replace this header comment with your names!
+* - Follow "Last Name, First Name" format.
+* - Sort alphabetically!
 *******************************************************************************
 
 .include "8clocks.jsim"
 .include "nominal.jsim"
 .include "stdcell.jsim"
 
-*******************************************************************************
-* PREVIOUS SUBCIRCUITS
+/*
+    The implementation of the full adder is slightly different for this lab
+    because this implementation results in a smaller overall circuit.
+    The sum part of the FA uses two XORs, and the carry part uses ANDs and ORs.
+*/
 .subckt fa a b c_in sum c_out
     Xxor a b abxor xor2
     Xsum abxor c_in sum xor2
@@ -19,12 +21,14 @@
     Xc2 a b c2 and2
     Xc3 c1 c2 c_out or2
 .ends
+
 /*
     32-bit adder implementation
 */
 .subckt add32 a[31:0] b[31:0] cin0 sum[31:0] cout[31:30]
     Xfn a[31:0] b[31:0] cout[30:0] cin0 sum[31:0] cout[31:0] fa
 .ends
+
 /*
     Outputs 
         1 if all values are zero
@@ -39,6 +43,7 @@
     Xor_second or_int[7:0] or_int2_[1:0] or4
     Xres or_int2_1 or_int2_0 z nor2
 .ends
+
 /*
     As32 implementation. 32 bits
     First, Gets the inverted values of B
@@ -71,6 +76,7 @@
     Xoverflow cout31 cout30 v xor2
     Xzero fas[31:0] z nor32
 .ends
+
 /*
     32 bit comparator that checks equality/inequality
     Relies on an as32 circuit before it.
@@ -94,6 +100,7 @@
     Xout1 eqterm lessterm fcmp0 nand2
     .connect 0 fcmp[31:1]
 .ends
+
 /*
     Xid s0 s1 d0 d1 d2 d3 z mux4
 
@@ -125,166 +132,29 @@
     Xmux b[31:0] a[31:0] op3#32 op2#32 op1#32 op0#32 fbool[31:0] mux4
 .ends
 
-/*
-RIGHT SHIFT
-To reduce circuit size, all of the right shifts
-(shiftr1, shiftr2, shiftr4, shiftr8, shiftr16)
-actually have no gates.
-
-Rather, the padding bit (last) is given and connected
-to the n leftmost bits.
-The rest of the bits are the shifted bits--
-aka for the (31-n)th bit to 0th bit, it's
-connected from the left most bit of a (a31) up until
-a(n)
-*/
 .subckt shiftr1 a[31:0] last fshift[31:0]
-    .connect a31 fshift30 
-    .connect a30 fshift29 
-    .connect a29 fshift28 
-    .connect a28 fshift27 
-    .connect a27 fshift26 
-    .connect a26 fshift25 
-    .connect a25 fshift24 
-    .connect a24 fshift23 
-    .connect a23 fshift22 
-    .connect a22 fshift21 
-    .connect a21 fshift20 
-    .connect a20 fshift19 
-    .connect a19 fshift18 
-    .connect a18 fshift17 
-    .connect a17 fshift16 
-    .connect a16 fshift15 
-    .connect a15 fshift14 
-    .connect a14 fshift13 
-    .connect a13 fshift12 
-    .connect a12 fshift11 
-    .connect a11 fshift10 
-    .connect a10 fshift9 
-    .connect a9 fshift8
-    .connect a8 fshift7
-    .connect a7 fshift6
-    .connect a6 fshift5
-    .connect a5 fshift4
-    .connect a4 fshift3
-    .connect a3 fshift2
-    .connect a2 fshift1
-    .connect a1 fshift0
+    Xjoin a[31:1] fshift[30:0] join
     .connect last fshift31
 .ends
 
 .subckt shiftr2 a[31:0] last fshift[31:0]
-    .connect a31 fshift29
-    .connect a30 fshift28
-    .connect a29 fshift27
-    .connect a28 fshift26
-    .connect a27 fshift25
-    .connect a26 fshift24
-    .connect a25 fshift23
-    .connect a24 fshift22
-    .connect a23 fshift21
-    .connect a22 fshift20
-    .connect a21 fshift19
-    .connect a20 fshift18
-    .connect a19 fshift17
-    .connect a18 fshift16
-    .connect a17 fshift15
-    .connect a16 fshift14
-    .connect a15 fshift13
-    .connect a14 fshift12
-    .connect a13 fshift11
-    .connect a12 fshift10
-    .connect a11 fshift9
-    .connect a10 fshift8
-    .connect a9 fshift7
-    .connect a8 fshift6
-    .connect a7 fshift5
-    .connect a6 fshift4
-    .connect a5 fshift3
-    .connect a4 fshift2
-    .connect a3 fshift1
-    .connect a2 fshift0
-    .connect last fshift[31:30]
+  Xjoin a[31:2] fshift[29:0] join
+  .connect last fshift[31:30]
 .ends
 
 .subckt shiftr4 a[31:0] last fshift[31:0]
-    .connect a31 fshift27
-    .connect a30 fshift26
-    .connect a29 fshift25
-    .connect a28 fshift24
-    .connect a27 fshift23
-    .connect a26 fshift22
-    .connect a25 fshift21
-    .connect a24 fshift20
-    .connect a23 fshift19
-    .connect a22 fshift18
-    .connect a21 fshift17
-    .connect a20 fshift16
-    .connect a19 fshift15
-    .connect a18 fshift14
-    .connect a17 fshift13
-    .connect a16 fshift12
-    .connect a15 fshift11
-    .connect a14 fshift10
-    .connect a13 fshift9
-    .connect a12 fshift8
-    .connect a11 fshift7
-    .connect a10 fshift6
-    .connect a9 fshift5
-    .connect a8 fshift4
-    .connect a7 fshift3
-    .connect a6 fshift2
-    .connect a5 fshift1
-    .connect a4 fshift0
-    .connect last fshift[31:28]
+  Xjoin a[31:4] fshift[27:0] join
+  .connect last fshift[31:28]
 .ends
 
 .subckt shiftr8 a[31:0] last fshift[31:0]
-    .connect a31 fshift23
-    .connect a30 fshift22
-    .connect a29 fshift21
-    .connect a28 fshift20
-    .connect a27 fshift19
-    .connect a26 fshift18
-    .connect a25 fshift17
-    .connect a24 fshift16
-    .connect a23 fshift15
-    .connect a22 fshift14
-    .connect a21 fshift13
-    .connect a20 fshift12
-    .connect a19 fshift11
-    .connect a18 fshift10
-    .connect a17 fshift9
-    .connect a16 fshift8
-    .connect a15 fshift7
-    .connect a14 fshift6
-    .connect a13 fshift5
-    .connect a12 fshift4
-    .connect a11 fshift3
-    .connect a10 fshift2
-    .connect a9 fshift1
-    .connect a8 fshift0
-    .connect last fshift[31:24]
+  Xjoin a[31:8] fshift[23:0] join
+  .connect last fshift[31:24]
 .ends
 
 .subckt shiftr16 a[31:0] last fshift[31:0]
-    .connect a31 fshift15
-    .connect a30 fshift14
-    .connect a29 fshift13
-    .connect a28 fshift12
-    .connect a27 fshift11
-    .connect a26 fshift10
-    .connect a25 fshift9
-    .connect a24 fshift8
-    .connect a23 fshift7
-    .connect a22 fshift6
-    .connect a21 fshift5
-    .connect a20 fshift4
-    .connect a19 fshift3
-    .connect a18 fshift2
-    .connect a17 fshift1
-    .connect a16 fshift0
-    .connect last fshift[31:16]
+  Xjoin a[31:16] fshift[15:0] join
+  .connect last fshift[31:16]
 .ends
 
 .subckt shift32 a[31:0] b[4:0] op[1:0] fshift[31:0]
@@ -341,7 +211,6 @@ a[31:0] and b[31:0] are the primary and second inputs, respectively.
     Xshift a[31:0] b[4:0] alufn[1:0] fshift[31:0] shift32
     Xresult alufn4#32 alufn5#32 fas[31:0] fbool[31:0] fshift[31:0] fcmp[31:0] f[31:0] mux4 
 .ends
-*******************************************************************************
 
 *******************************************************************************
 * The $memory statement defines a memory device. Each memory device comes with
@@ -389,7 +258,7 @@ a[31:0] and b[31:0] are the primary and second inputs, respectively.
 *******************************************************************************
 Xmemory  vdd  0    0   pc[8:2]    inst[31:0]
 +        vdd  0    0   mema[8:2]  memrd[31:0]
-+        0    clk  wr  mema[8:2]  memwd[31:0]
++        0    clk  wr_  mema[8:2]  memwd[31:0]
 + $memory width=32 nlocations=128 file="fibolinus.bin"
 
 *******************************************************************************
@@ -402,7 +271,7 @@ Xmemory  vdd  0    0   pc[8:2]    inst[31:0]
 *******************************************************************************
 Xregisters  vdd  0    0      ra1_[4:0]  rd1_[31:0]
 +           vdd  0    0      ra2_[4:0]  rd2_[31:0]
-+           0    clk  werf_  wa[4:0]    wd[31:0]
++           0    clk  werf_reset wa[4:0]    wd[31:0]
 + $memory width=32 nlocations=32 contents=(
 +   0 0 0 0 0 0 0 0
 +   0 0 0 0 0 0 0 0
@@ -416,12 +285,10 @@ Xregisters  vdd  0    0      ra1_[4:0]  rd1_[31:0]
 *       the werf_ signal is forced OFF; otherwise, it should pass through the
 *       original werf signal.
 *******************************************************************************
-* connect wa to memrd (rc)
-.connect memrd[25:21] wa[4:0]
 * .connect werf werf_
-Xwerf1 wa4 wa3 wa2 wa1 wa_and_four and4
-Xwerf2 wa_and_four wa0 wa_and and2
-Xwerf3 wa_and werf 0 werf_ mux2
+Xwerf1 wa4 wa3 wa2 wa1 wa41 and4
+Xwerf2 wa41 wa0 wa40 and2
+Xwerf3 wa40 werf 0 werf_ mux2
 
 *******************************************************************************
 * Xcontrol is a read-only memory (ROM) that defines what to feed into the
@@ -434,7 +301,7 @@ Xwerf3 wa_and werf 0 werf_ mux2
 *                      times 2 (first half is for z = 0, second half for z = 1)
 * TODO: Fill these lines with the proper control signals for each opcode!
 *******************************************************************************
-Xcontrol  vdd  0  0  zero opcode[5:0]  control[13:0]
+Xcontrol  vdd  0  0  z opcode[5:0]  control[13:0]
 + $memory width=14 nlocations=128 contents=(
 +   0b11000000000000 0b11000000000000 0b11000000000000 0b11000000000000 0b11000000000000 0b11000000000000 0b11000000000000 0b11000000000000
 +   0b11000000000000 0b11000000000000 0b11000000000000 0b11000000000000 0b11000000000000 0b11000000000000 0b11000000000000 0b11000000000000
@@ -479,8 +346,8 @@ Xjcontrolg control0       werf       join
 * Also connect our instruction signal lines to our opcode, rc, ra, rb, and c.
 *******************************************************************************
 Xjinsta inst[31:26] opcode[5:0] join
-Xjinstb inst[25:21] rc[4:0]     join
-Xjinstc inst[20:16] ra[4:0]     join
+Xjinstb inst[25:21] wa[4:0]     join
+Xjinstc inst[20:16] ra1_[4:0]     join
 Xjinstd inst[15:11] rb[4:0]     join
 Xjinste inst[15:0]  c[15:0]     join
 
@@ -490,73 +357,52 @@ Xjinste inst[15:0]  c[15:0]     join
 * Note that you will need to replace this with a real program counter circuit
 * in the final lab!
 *******************************************************************************
+* Xjpc clk[8:2] pc[8:2] join
+* .connect 0 pc[1:0]
 
-*(+4)
-.subckt plusfour in[8:2] out[8:2]
-    Xfa in[8:2] 0#7 cout[5:0] vdd out[8:2] cout[6:0] fa
+*(+4+4c)
+.subckt plusfour_c pc_inp[8:0] c[6:0] pc_next[8:0]
+  Xadd pc_inp[8:2] c[6:0] cout[5:0] vdd pc_next[8:2] cout[6:0] fa
+  Xjoin pc_inp[1:0] pc_next[1:0] join
 .ends
 
-.subckt plusfour_c in[8:2] c[15:0] out[8:2]
-    * sign extend c
-    .connect c15 c_ext[31:16]
-    Xcopyc c[15:0] c_ext[15:0] join
-    * sign extend in
-    .connect in8 in_ext[33:9]
-    Xcopyin in[8:2] in_ext[8:2] join
-    * shift right in by 2 -- in / 4
-    Xin_div in_ext[33:2] 0 0 0 vdd 0 vdd vdd in_div[31:0] shift32
-    * in/4 + c + 1 (add32 but should be less than that tbh)
-    Xsum in_div[31:0] c_ext[31:0] vdd sum[31:0] cout[31:30] add32
-    * times everything by 4
-    Xmult_sum sum[31:0] 0 0 0 vdd 0 0 0 out[33:2] shift32
-.ends
+Xnextline pc[8:0] 0#7 pc_nextline[8:0] plusfour_c
+Xoffsetline pc[8:0] c[6:0] pc_offset[8:0] plusfour_c
 
-
-
-Xpcplus_four pc[8:2] pc_plus[8:2] plusfour
-Xpcplus_four_c pc[8:2] inst[15:0] pc_plus_c[8:2] plusfour_c
-
-Xra_addr inst[20:16] ra1_[4:0] join
-Xpcmux pcsel[0:1]#7 pc_plus[8:2] pc_plus_c[8:2] rd1_[6:0] pc[8:2] pcinp[8:2] mux4
-
-*Program Counter
-Xpc pcinp[8:2] clk8#7 pc[8:2] dreg
-
-Xbsel_mux bsel#32 rd2_[31:0] inst15#16 inst[15:0] alu_b[31:0] mux2
-Xalu rd1_[31:0] alu_b[31:0] alufn[5:0] f[31:0] alu32
-
-* WDSEL
-Xwdsel wdsel[1:0]#32 pc_plus8#25 pc_plus[8:2] f[31:0] memrd[31:0] 0#32 wd[31:0] mux4
-
-* Connect clock to clk8
-.connect clk clk8
-
-* Connect ra2_ to rb or rc
-Xra2sel_mux ra2sel#5 inst[15:11] inst[25:21] ra2_[4:0] mux2
-
-* Connect alu output to mema
-Xalu_mema f[6:0] mema[8:2] join
-
-* Connect memwd to rd2
-Xrd2_memwd rd2_[31:0] memwd[31:0] join
-
-* Finally... connect zero signal
-Xzero rd1_[31:0] zero nor32
+Xpcmux pcsel[0:1]#9 pc_nextline[8:0] pc_offset[8:0] rd1_[8:0] pc[8:0] pc_mux[8:0] mux4
+XresetReg resetA#9 pc_mux[8:0] pc_reg[8:0] and2
+Xpcounter pc_reg[8:0] clk6#9 pc[8:0] dreg
 
 *******************************************************************************
 * Temporarily connect other undefined signals.
 * Note that you will need to remove these signals from this section once you
 * connect them elsewhere!
 *******************************************************************************
-* .connect vdd clk ra1_[4:0] ra2_[4:0] wa[4:0] wd[31:0] mema[8:0] memwd[31:0]
-* .connect 0 z
+.connect 0 z
 
+* connect clock to clk8
+.connect clk8 clk
+
+Xrd2_wd rd2_[31:0] memwd[31:0] join
+
+* RA2SEL
+Xra2sel ra2sel#5 rb[4:0] wa[4:0] ra2_[4:0] mux2
+
+* WDSEL
+Xwdsel wdsel[0:1]#32 pc_nextline8#23 pc_nextline[8:0] f[31:0] memrd[31:0] 0#32 wd[31:0] mux4
+
+* BSEL
+Xbsel bsel#32 c15#16 c[15:0] rd2_[31:0] b_mux[31:0] mux2
+
+* ALU
+Xalu rd1_[31:0] b_mux[31:0] alufn[5:0] f[31:0] alu32
+Xmema f[8:0] mema[8:0] join
 *******************************************************************************
 * Plot some signals together (or else we won't have enough space in the plot
 * window)
 *******************************************************************************
-*Xjdisplaya ra2_b_wdsel[3:0] ra2sel bsel wdsel[1:0] join
-*Xjdisplayb wr_werfs[2:0]    wr werf werf_          join
+Xjdisplaya ra2_b_wdsel[3:0] ra2sel bsel wdsel[1:0] join
+Xjdisplayb wr_werfs[2:0]    wr werf werf_          join
 
 *******************************************************************************
 * This section plots the following signals in order:
@@ -584,11 +430,16 @@ Xzero rd1_[31:0] zero nor32
 *            lab, z should instead be computed by some circuit instead of
 *            connected to ground or vdd!)
 *******************************************************************************
-.tran 1280ns
-.plot pc[8:2]
-/*
+Xresetwr resetA wr wr_ and2
+Xresetwerf resetA werf_ werf_reset and2
+
+WresetA resetA nrz(0v,5.0v,20ns,0ns,.1ns,.1ns)
++ 0 1
+.tran 5280ns
+.plot pc[8:0]
+.plot inst[31:0]
 .plot betaop(opcode[5:0])
-.plot d(ra[4:0])
+.plot d(ra1_[4:0])
 .plot d(rb[4:0])
 .plot d(rc[4:0])
 .plot sd(c[15:0])
@@ -602,4 +453,3 @@ Xzero rd1_[31:0] zero nor32
 .plot d(mema[8:0])
 .plot sd(memrd[31:0])
 .plot sd(memwd[31:0])
-*/
