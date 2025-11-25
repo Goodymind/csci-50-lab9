@@ -254,8 +254,6 @@ a[31:0] and b[31:0] are the primary and second inputs, respectively.
 *   2nd line = read port for LD instructions (memrd)
 *   3rd line = write port for ST instructions (memwd, controlled by wr signal)
 *   5th line = the memory statement itself
-* TODO: Copy your Beta program's BSim assembler output (.bin file) to your JSim
-*       folder and change the file= parameter accordingly!
 *******************************************************************************
 Xmemory  vdd  0    0   pc[8:2]    inst[31:0]
 +        vdd  0    0   mema[8:2]  memrd[31:0]
@@ -281,15 +279,12 @@ Xregisters  vdd  0    0      ra1_[4:0]  rd1_[31:0]
 + )
 
 *******************************************************************************
-* Temporarily connect werf_ directly to werf.
-* TODO: You must replace this with circuitry so that if wa[4:0] = 0b11111 (31),
-*       the werf_ signal is forced OFF; otherwise, it should pass through the
-*       original werf signal.
+* Turn off werf_ when signal is Forced off (wa[4:0] = 0b11111 (31))
 *******************************************************************************
 Xwerf1 wa4 wa3 wa2 wa1 wa_int and4
 Xwerf2 wa_int wa0 wa_all and2
 Xwerf3 wa_all werf 0 werf_ mux2
-
+* Connects wa and rc
 Xwarcjoin wa[4:0] rc[4:0] join
 *******************************************************************************
 * Xcontrol is a read-only memory (ROM) that defines what to feed into the
@@ -300,7 +295,6 @@ Xwarcjoin wa[4:0] rc[4:0] join
 *   2nd line = the memory statement itself
 *   succeeding lines = the control signals (14 bits each) for all 64 opcodes
 *                      times 2 (first half is for z = 0, second half for z = 1)
-* TODO: Fill these lines with the proper control signals for each opcode!
 *******************************************************************************
 Xcontrol  vdd  0  0  z opcode[5:0]  control[13:0]
 + $memory width=14 nlocations=128 contents=(
@@ -418,18 +412,6 @@ Xjdisplayb wr_werfs[3:0]    wr werf werf_ werf_reset          join
 * - mema (address to access in main memory)
 * - memrd (result of reading address mema)
 * - memwd (value being written to address mema -- but only if wr is 1)
-*
-* Since the circuit is incomplete, the values will be invalid starting from the
-* control signals. After you're done with this current lab, the control signals
-* should be correct. (After you're done with the final lab, everything should
-* be correct!)
-*
-* IMPORTANT: Since z is currently connected to 0, only the first half of your
-*            table of control logic signals is returned. To test the second
-*            half of your table, modify the ".connect 0 z" statement above
-*            this section to ".connect vdd z". (Remember that in the final
-*            lab, z should instead be computed by some circuit instead of
-*            connected to ground or vdd!)
 *******************************************************************************
 
 Xresetwr resetA wr 0 wr_ mux2
