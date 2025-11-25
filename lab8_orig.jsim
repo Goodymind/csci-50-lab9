@@ -1,7 +1,8 @@
 *******************************************************************************
-* As with the previous labs, replace this header comment with your names!
-* - Follow "Last Name, First Name" format.
-* - Sort alphabetically!
+* LAB #9
+* - Abuke, Alinus
+* - Huang, Julyanna Francesca
+* - Li, Raphael Seth
 *******************************************************************************
 
 .include "8clocks.jsim"
@@ -129,7 +130,7 @@
     1   1   1   1   1 (TRUE)
 */
 .subckt bool32 a[31:0] b[31:0] op[3:0] fbool[31:0]
-    Xmux b[31:0] a[31:0] op3#32 op2#32 op1#32 op0#32 fbool[31:0] mux4
+    Xmux a[31:0] b[31:0] op0#32 op1#32 op2#32 op3#32 fbool[31:0] mux4
 .ends
 
 .subckt shiftr1 a[31:0] last fshift[31:0]
@@ -259,7 +260,7 @@ a[31:0] and b[31:0] are the primary and second inputs, respectively.
 Xmemory  vdd  0    0   pc[8:2]    inst[31:0]
 +        vdd  0    0   mema[8:2]  memrd[31:0]
 +        0    clk  wr_  mema[8:2]  memwd[31:0]
-+ $memory width=32 nlocations=128 file="fibolinus.bin"
++ $memory width=32 nlocations=128 file="lab7.bin"
 
 *******************************************************************************
 * Xregisters is a register memory device to store your Beta registers r0 - r31.
@@ -361,28 +362,25 @@ Xjinste inst[15:0]  c[15:0]     join
 * .connect 0 pc[1:0]
 
 *(+4+4c)
+* 7 bit ripple adder that uses fa
 .subckt plusfour_c pc_inp[8:0] c[6:0] pc_next[8:0]
   Xadd pc_inp[8:2] c[6:0] cout[5:0] vdd pc_next[8:2] cout[6:0] fa
   Xjoin pc_inp[1:0] pc_next[1:0] join
 .ends
 
+
 Xnextline pc[8:0] 0#7 pc_nextline[8:0] plusfour_c
 Xoffsetline pc[8:0] c[6:0] pc_offset[8:0] plusfour_c
 
+* PCREG
+Xpcounter pc_reg[8:0] clk#9 pc[8:0] dreg
+* PCSEL
 Xpcmux pcsel0#9 pcsel1#9 pc_nextline[8:0] pc_offset[8:0] rd1_[8:0] pc[8:0] pc_mux[8:0] mux4
 
-Xpcounter pc_reg[8:0] clk#9 pc[8:0] dreg
-
-*******************************************************************************
-* Temporarily connect other undefined signals.
-* Note that you will need to remove these signals from this section once you
-* connect them elsewhere!
-*******************************************************************************
+* Z/NOR32
 Xz rd1_[31:0] z nor32
 
-* connect clock to clk8
-.connect clk8 clk
-
+* QOL connects register read to memory write
 Xrd2_wd rd2_[31:0] memwd[31:0] join
 
 * RA2SEL
@@ -396,7 +394,10 @@ Xbsel bsel#32 rd2_[31:0] c15#16 c[15:0] b_mux[31:0] mux2
 
 * ALU
 Xalu rd1_[31:0] b_mux[31:0] alufn[5:0] f[31:0] alu32
+
+* QOL connects output of alu to mem
 Xmema f[8:0] mema[8:0] join
+
 *******************************************************************************
 * Plot some signals together (or else we won't have enough space in the plot
 * window)
@@ -435,9 +436,10 @@ Xresetwr resetA wr 0 wr_ mux2
 Xresetwerf resetA werf_ 0 werf_reset mux2
 XresetReg resetA#9 pc_mux[8:0] 0#9 pc_reg[8:0] mux2
 
-WresetA resetA nrz(0v,5.0v,670ns,0ns,.1ns,.1ns)
+WresetA resetA nrz(0v,5.0v,21ns,0ns,.1ns,.1ns)
 + 1 0
 
+.connect clk3 clk
 .tran 70us
 .plot pc[8:0]
 .plot inst[31:0]
