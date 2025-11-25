@@ -286,9 +286,9 @@ Xregisters  vdd  0    0      ra1_[4:0]  rd1_[31:0]
 *       original werf signal.
 *******************************************************************************
 * .connect werf werf_
-Xwerf1 wa4 wa3 wa2 wa1 wa41 and4
-Xwerf2 wa41 wa0 wa40 and2
-Xwerf3 wa40 werf 0 werf_ mux2
+Xwerf1 wa4 wa3 wa2 wa1 wa_int and4
+Xwerf2 wa_int wa0 wa_all and2
+Xwerf3 wa_all werf 0 werf_ mux2
 
 *******************************************************************************
 * Xcontrol is a read-only memory (ROM) that defines what to feed into the
@@ -371,14 +371,14 @@ Xoffsetline pc[8:0] c[6:0] pc_offset[8:0] plusfour_c
 
 Xpcmux pcsel[0:1]#9 pc_nextline[8:0] pc_offset[8:0] rd1_[8:0] pc[8:0] pc_mux[8:0] mux4
 XresetReg resetA#9 pc_mux[8:0] pc_reg[8:0] and2
-Xpcounter pc_reg[8:0] clk6#9 pc[8:0] dreg
+Xpcounter pc_reg[8:0] clk#9 pc[8:0] dreg
 
 *******************************************************************************
 * Temporarily connect other undefined signals.
 * Note that you will need to remove these signals from this section once you
 * connect them elsewhere!
 *******************************************************************************
-.connect 0 z
+Xz rd1_[31:0] z nor32
 
 * connect clock to clk8
 .connect clk8 clk
@@ -389,10 +389,10 @@ Xrd2_wd rd2_[31:0] memwd[31:0] join
 Xra2sel ra2sel#5 rb[4:0] wa[4:0] ra2_[4:0] mux2
 
 * WDSEL
-Xwdsel wdsel[0:1]#32 pc_nextline8#23 pc_nextline[8:0] f[31:0] memrd[31:0] 0#32 wd[31:0] mux4
+Xwdsel wdsel0#32 wdsel1#32 pc_nextline8#23 pc_nextline[8:0] f[31:0] memrd[31:0] 0#32 wd[31:0] mux4
 
 * BSEL
-Xbsel bsel#32 c15#16 c[15:0] rd2_[31:0] b_mux[31:0] mux2
+Xbsel bsel#32 rd2_[31:0] c15#16 c[15:0] b_mux[31:0] mux2
 
 * ALU
 Xalu rd1_[31:0] b_mux[31:0] alufn[5:0] f[31:0] alu32
@@ -402,7 +402,7 @@ Xmema f[8:0] mema[8:0] join
 * window)
 *******************************************************************************
 Xjdisplaya ra2_b_wdsel[3:0] ra2sel bsel wdsel[1:0] join
-Xjdisplayb wr_werfs[2:0]    wr werf werf_          join
+Xjdisplayb wr_werfs[3:0]    wr werf werf_ werf_reset          join
 
 *******************************************************************************
 * This section plots the following signals in order:
@@ -433,20 +433,19 @@ Xjdisplayb wr_werfs[2:0]    wr werf werf_          join
 Xresetwr resetA wr wr_ and2
 Xresetwerf resetA werf_ werf_reset and2
 
-WresetA resetA nrz(0v,5.0v,20ns,0ns,.1ns,.1ns)
+WresetA resetA nrz(0v,5.0v,640ns,0ns,.1ns,.1ns)
 + 0 1
-.tran 5280ns
+.tran 20280ns
 .plot pc[8:0]
 .plot inst[31:0]
 .plot betaop(opcode[5:0])
 .plot d(ra1_[4:0])
+.plot sd(f[31:0])
 .plot d(rb[4:0])
-.plot d(rc[4:0])
+.plot d(wa[4:0])
 .plot sd(c[15:0])
-.plot b(pcsel[1:0])
-.plot b(ra2_b_wdsel[3:0])
-.plot b(alufn[5:0])
-.plot b(wr_werfs[2:0])
+.plot b(wdsel[1:0])
+.plot b(wr_werfs[3:0])
 .plot sd(rd1_[31:0])
 .plot sd(rd2_[31:0])
 .plot sd(wd[31:0])
