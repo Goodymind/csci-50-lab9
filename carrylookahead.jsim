@@ -1,0 +1,99 @@
+.include "8clocks.jsim"
+.include "nominal.jsim"
+.include "stdcell.jsim"
+
+.subckt fa_sum a b c_in sum 
+* Xn_ circuits are for generating the inverted inputs
+    Xn1 a a_not inverter
+    Xn2 b b_not inverter
+    Xn3 c_in c_not inverter
+* Xs_ circuits are for sum
+    Xs1 a b_not c_not pn1 nand3
+    Xs2 a_not b_not c_in pn2 nand3
+    Xs3 a_not b c_not pn3 nand3
+    Xs4 a b c_in pn4 nand3
+    Xs5 pn1 pn2 pn3 pn4 sum nand4
+.ends
+
+.subckt nand5 a b c d e o 
+    Xnand4 a b c d o nand4
+.ends
+
+.subckt cgen a[3:0] b[3:0] c_in c[3:0]
+    Xpropagate a[3:0] b[3:0] p[3:0] xor2
+    Xgenerate a[3:0] b[3:0] g[3:0] and2
+    Xinv g3 g2 g1 g0 ng3 ng2 ng1 ng0 inverter_4
+    *c0 
+    X1 p0 c_in np0c_in nand2
+    Xc0 ng0 np0c_in c0 nand2
+    *c1
+    X2 p1 g0 np1g0 nand2
+    X3 p1 p0 c_in np1p0c_in nand3
+    Xc1 ng1 np1g0 np1p0c_in c1 nand3
+    *c2
+    X4 p2 g1 np2g1 nand2
+    X5 p2 p1 g0 np1p2g0 nand3
+    X6 p2 p1 p0 c_in np2p1p0c_in nand4
+    Xc2 ng2 np2g1 np1p2g0 np2p1p0c_in c2 nand4
+    *c3
+    X7 p3 g2 np3g2 nand2
+    X8 p3 p2 g1 np3p2g1 nand3
+    X9 p3 p2 p1 g0 np3p2p1g0 nand4
+    X10 p3 p2 p1 p0 c_in np3p2p1p0c_in nand5
+    Xc3 ng3 np3g2 np3p2g1 np3p2p1g0 np3p2p1p0c_in c3 nand5
+.ends
+
+.subckt cgen_old a[3:0] b[3:0] c_in c[3:0]
+    Xpropagate a[3:0] b[3:0] p[3:0] xor2
+    Xgenerate a[3:0] b[3:0] g[3:0] and2
+    Xtemp1 p0 c_in p0c_in and2
+    Xc0 g0 p0c_in c0 or2
+    Xtemp2 p1 g0 p1g0 and2
+    Xtemp3 p1 p0c_in p1p0c_in and2
+    Xc1 g1 p1g0 p1p0c_in c1 or3
+    Xtemp4 p2 g1 p2g1 and2
+    Xtemp5 p2 p1g0 p2p1g0 and2
+    Xtemp6 p2 p1p0c_in p2p1p0c_in and2
+    Xc2 g2 p2g1 p2p1g0 p2p1p0c_in c2 or4
+    Xtemp7 p3 g2 p3g2 and2
+    Xtemp8 p3 p2g1 p3p2g1 and2
+    Xtemp9 p3 p2p1g0 p3p2p1g0 and2
+    Xtemp10 p3 p2p1p0c_in p3p2p1p0c_in and2
+    Xtemp11 p3g2 p3p2g1 p3p2p1g0 p3p2p1p0c_in tempsum or4
+    Xc3 g3 tempsum c3 or2
+.ends
+
+.subckt add4 a[3:0] b[3:0] c_in s[3:0] c[3:0]
+    Xcarries a[3:0] b[3:0] c_in c[3:0] cgen
+    Xs0 a0 b0 c_in s0 fa_sum
+    Xs1 a1 b1 c0 s1 fa_sum
+    Xs2 a2 b2 c1 s2 fa_sum
+    Xs3 a3 b3 c2 s3 fa_sum
+.ends
+
+.subckt add32 a[31:0] b[31:0] c_in sum[31:0] cout[31:30]
+    Xadd4_1 a[3:0] b[3:0] c_in sum[3:0] cout[3:0] add4
+    Xadd4_2 a[7:4] b[7:4] cout3 sum[7:4] cout[7:4] add4
+    Xadd4_3 a[11:8] b[11:8] cout7 sum[11:8] cout[11:8] add4
+    Xadd4_4 a[15:12] b[15:12] cout11 sum[15:12] cout[15:12] add4
+    Xadd4_5 a[19:16] b[19:16] cout15 sum[19:16] cout[19:16] add4
+    Xadd4_6 a[23:20] b[23:20] cout19 sum[23:20] cout[23:20] add4
+    Xadd4_7 a[27:24] b[27:24] cout23 sum[27:24] cout[27:24] add4
+    Xadd4_8 a[31:28] b[31:28] cout27 sum[31:28] cout[31:28] add4
+.ends
+
+Wa a[31:0] nrz(0, 5, 20ns, 0ns, 0.001ns, 0.001ns)
++ 0x00000000 0x55555555 0x00000000 0x55555555 0xFFFFFFFF
++ 0xAAAAAAAA 0x00000000 0xAAAAAAAA 0x00000001 0xFFFFFFFF
+
+Wb b[31:0] nrz(0, 5, 20ns, 0ns, 0.001ns, 0.001ns)
++ 0x00000000 0x00000000 0x55555555 0x55555555 0xFFFFFFFF
++ 0x00000000 0xAAAAAAAA 0xAAAAAAAA 0xFFFFFFFF 0x00000001
+
+Xsum a[31:0] b[31:0] 0 sum[31:0] c[31:30] add32
+
+.tran 200ns
+.plot a[31:0]
+.plot b[31:0]
+.plot sum[31:0] 
+.plot cout[31:30]
