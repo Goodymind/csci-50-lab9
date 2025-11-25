@@ -1,0 +1,20 @@
+.include "8clocks.jsim"
+.include "nominal.jsim"
+.include "stdcell.jsim"
+
+
+Xregisters  vdd  0    0      ra1_[4:0]  rd1_[31:0]
++ $memory width=32 nlocations=32 contents=(
++   1 2 3 4 5 6 7 8
++   9 10 11 12 13 14 15 16
++   17 18 19 20 21 22 23 24
++   25 26 27 28 29 30 31 32
++ )
+
+.connect resetA 0
+Wra1_ ra1_[4:0] nrz(0v,5.0v,639.9ns,0ns,.1ns,.1ns)
++ 0 1 2 3
+
+.connect clk clk2
+.tran 5028ns
+.plot sd(rd1_[31:0])

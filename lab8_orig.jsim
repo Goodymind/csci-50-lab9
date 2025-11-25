@@ -369,7 +369,7 @@ Xjinste inst[15:0]  c[15:0]     join
 Xnextline pc[8:0] 0#7 pc_nextline[8:0] plusfour_c
 Xoffsetline pc[8:0] c[6:0] pc_offset[8:0] plusfour_c
 
-Xpcmux pcsel[0:1]#9 pc_nextline[8:0] pc_offset[8:0] rd1_[8:0] pc[8:0] pc_mux[8:0] mux4
+Xpcmux pcsel0#9 pcsel1#9 pc_nextline[8:0] pc_offset[8:0] rd1_[8:0] pc[8:0] pc_mux[8:0] mux4
 XresetReg resetA#9 pc_mux[8:0] pc_reg[8:0] and2
 Xpcounter pc_reg[8:0] clk#9 pc[8:0] dreg
 
