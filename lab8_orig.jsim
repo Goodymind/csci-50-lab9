@@ -271,7 +271,7 @@ Xmemory  vdd  0    0   pc[8:2]    inst[31:0]
 *******************************************************************************
 Xregisters  vdd  0    0      ra1_[4:0]  rd1_[31:0]
 +           vdd  0    0      ra2_[4:0]  rd2_[31:0]
-+           0    clk  werf_reset wa[4:0]    wd[31:0]
++           0    clk  werf_reset rc[4:0]    wd[31:0]
 + $memory width=32 nlocations=32 contents=(
 +   0 0 0 0 0 0 0 0
 +   0 0 0 0 0 0 0 0
@@ -285,11 +285,11 @@ Xregisters  vdd  0    0      ra1_[4:0]  rd1_[31:0]
 *       the werf_ signal is forced OFF; otherwise, it should pass through the
 *       original werf signal.
 *******************************************************************************
-* .connect werf werf_
 Xwerf1 wa4 wa3 wa2 wa1 wa_int and4
 Xwerf2 wa_int wa0 wa_all and2
 Xwerf3 wa_all werf 0 werf_ mux2
 
+Xwarcjoin wa[4:0] rc[4:0] join
 *******************************************************************************
 * Xcontrol is a read-only memory (ROM) that defines what to feed into the
 * control signal lines of your final Beta circuit, depending on what opcode
@@ -370,7 +370,7 @@ Xnextline pc[8:0] 0#7 pc_nextline[8:0] plusfour_c
 Xoffsetline pc[8:0] c[6:0] pc_offset[8:0] plusfour_c
 
 Xpcmux pcsel0#9 pcsel1#9 pc_nextline[8:0] pc_offset[8:0] rd1_[8:0] pc[8:0] pc_mux[8:0] mux4
-XresetReg resetA#9 pc_mux[8:0] pc_reg[8:0] and2
+
 Xpcounter pc_reg[8:0] clk#9 pc[8:0] dreg
 
 *******************************************************************************
@@ -386,7 +386,7 @@ Xz rd1_[31:0] z nor32
 Xrd2_wd rd2_[31:0] memwd[31:0] join
 
 * RA2SEL
-Xra2sel ra2sel#5 rb[4:0] wa[4:0] ra2_[4:0] mux2
+Xra2sel ra2sel#5 rb[4:0] rc[4:0] ra2_[4:0] mux2
 
 * WDSEL
 Xwdsel wdsel0#32 wdsel1#32 pc_nextline8#23 pc_nextline[8:0] f[31:0] memrd[31:0] 0#32 wd[31:0] mux4
@@ -430,19 +430,22 @@ Xjdisplayb wr_werfs[3:0]    wr werf werf_ werf_reset          join
 *            lab, z should instead be computed by some circuit instead of
 *            connected to ground or vdd!)
 *******************************************************************************
-Xresetwr resetA wr wr_ and2
-Xresetwerf resetA werf_ werf_reset and2
 
-WresetA resetA nrz(0v,5.0v,640ns,0ns,.1ns,.1ns)
-+ 0 1
-.tran 20280ns
+Xresetwr resetA wr 0 wr_ mux2
+Xresetwerf resetA werf_ 0 werf_reset mux2
+XresetReg resetA#9 pc_mux[8:0] 0#9 pc_reg[8:0] mux2
+
+WresetA resetA nrz(0v,5.0v,670ns,0ns,.1ns,.1ns)
++ 1 0
+
+.tran 70us
 .plot pc[8:0]
 .plot inst[31:0]
 .plot betaop(opcode[5:0])
 .plot d(ra1_[4:0])
 .plot sd(f[31:0])
 .plot d(rb[4:0])
-.plot d(wa[4:0])
+.plot d(rc[4:0])
 .plot sd(c[15:0])
 .plot b(wdsel[1:0])
 .plot b(wr_werfs[3:0])
